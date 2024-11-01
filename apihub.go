@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -54,6 +55,10 @@ type HubApiDeployment struct {
 	ApiVersions    []string            `json:"apiVersions"`
 }
 
+type HubApiVersions struct {
+	Versions []HubApiVersion `json:"versions"`
+}
+
 type HubApiVersion struct {
 	Name          string              `json:"name"`
 	DisplayName   string              `json:"displayName"`
@@ -76,6 +81,10 @@ type HubAttributeValue struct {
 	DisplayName string `json:"displayName"`
 	Description string `json:"description"`
 	Immutable   bool   `json:"immutable"`
+}
+
+type HubApiVersionSpecs struct {
+	Specs []HubApiVersionSpec `json:"specs"`
 }
 
 type HubApiVersionSpec struct {
@@ -503,6 +512,92 @@ func apiHubImport(flags *ApigeeFlags) error {
 	return nil
 }
 
+func apiHubExport(flags *ApigeeFlags) error {
+	baseDir := "src/main/apihub/apiproxies"
+
+	if flags.Project == "" {
+		fmt.Println("No project given.")
+		return nil
+	} else if flags.Region == "" {
+		fmt.Println("No region given.")
+		return nil
+	}
+
+	fmt.Println("Exporting all API Hub APIs for project " + flags.Project + "...")
+
+	if flags.Token == "" {
+		var token *oauth2.Token
+		scopes := []string{
+			"https://www.googleapis.com/auth/cloud-platform",
+		}
+
+		ctx := context.Background()
+		credentials, err := google.FindDefaultCredentials(ctx, scopes...)
+
+		if err == nil {
+			token, err = credentials.TokenSource.Token()
+
+			if err == nil {
+				flags.Token = token.AccessToken
+			}
+		}
+	}
+
+	apis := getApiHubApis(flags.Project, flags.Region, flags.Token)
+	for _, api := range apis.Apis {
+		if flags.ApiName == "" || strings.HasSuffix(api.Name, "/"+flags.ApiName) {
+			s := strings.Split(api.Name, "/")
+			apiName := s[len(s)-1]
+			fmt.Println("Exporting " + apiName + "...")
+
+			bytes, _ := json.MarshalIndent(api, "", "  ")
+			os.MkdirAll(baseDir+"/"+apiName, 0755)
+			os.WriteFile(baseDir+"/"+apiName+"/"+apiName+".json", bytes, 0644)
+
+			versions := getApiHubApiVersions(flags.Project, flags.Region, apiName, flags.Token)
+			for _, version := range versions.Versions {
+				s := strings.Split(version.Name, "/")
+				versionName := s[len(s)-1]
+				fmt.Println("Exporting " + api.Name + " Version " + versionName + "...")
+
+				bytes, _ := json.MarshalIndent(version, "", "  ")
+				os.WriteFile(baseDir+"/"+apiName+"/"+versionName+".json", bytes, 0644)
+
+				// get version specs
+				specs := getApiHubApiVersionSpecs(flags.Project, flags.Region, apiName, versionName, flags.Token)
+				for _, spec := range specs.Specs {
+					s := strings.Split(spec.Name, "/")
+					specName := s[len(s)-1]
+					fmt.Println("Exporting " + api.Name + " Spec " + specName + "...")
+
+					spec.Contents = getApiHubApiVersionSpecContents(flags.Project, flags.Region, apiName, versionName, specName, flags.Token)
+					bytes, _ := json.MarshalIndent(spec, "", "  ")
+					os.WriteFile(baseDir+"/"+apiName+"/"+specName+"-oas.json", bytes, 0644)
+				}
+			}
+		}
+	}
+
+	deployments := getApiHubDeployments(flags.Project, flags.Region, flags.Token)
+	for _, deployment := range deployments.Deployments {
+		s := strings.Split(deployment.Name, "/")
+		deploymentName := s[len(s)-1]
+		fmt.Println("Exporting deployment " + deploymentName + "...")
+
+		apiVersionName := strings.ReplaceAll(deploymentName, "-aws", "")
+		apiVersionName = strings.ReplaceAll(apiVersionName, "-azure", "")
+
+		var re = regexp.MustCompile(`(-v\d+)$`)
+		apiName := re.ReplaceAllString(apiVersionName, "")
+		os.MkdirAll(baseDir+"/"+apiName, 0755)
+
+		bytes, _ := json.MarshalIndent(deployment, "", "  ")
+		os.WriteFile(baseDir+"/"+apiName+"/"+deploymentName+".json", bytes, 0644)
+	}
+
+	return nil
+}
+
 func apiHubCleanLocal(flags *ApigeeFlags) error {
 	var baseDir = "src/main/apihub"
 	os.RemoveAll(baseDir)
@@ -571,6 +666,60 @@ func getApiHubApis(project string, region string, token string) HubApis {
 	}
 
 	return apis
+}
+
+func getApiHubApiVersions(project string, region string, api string, token string) HubApiVersions {
+	var versions HubApiVersions
+
+	req, _ := http.NewRequest(http.MethodGet, "https://apihub.googleapis.com/v1/projects/"+project+"/locations/"+region+"/apis/"+api+"/versions", nil)
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		body, err := io.ReadAll(resp.Body)
+		if err == nil {
+			json.Unmarshal(body, &versions)
+			//fmt.Println(string(body))
+		}
+	}
+
+	return versions
+}
+
+func getApiHubApiVersionSpecs(project string, region string, api string, version string, token string) HubApiVersionSpecs {
+	var specs HubApiVersionSpecs
+
+	req, _ := http.NewRequest(http.MethodGet, "https://apihub.googleapis.com/v1/projects/"+project+"/locations/"+region+"/apis/"+api+"/versions/"+version+"/specs", nil)
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		body, err := io.ReadAll(resp.Body)
+		if err == nil {
+			json.Unmarshal(body, &specs)
+			//fmt.Println(string(body))
+		}
+	}
+
+	return specs
+}
+
+func getApiHubApiVersionSpecContents(project string, region string, api string, version string, spec string, token string) HubContents {
+	var contents HubContents
+
+	req, _ := http.NewRequest(http.MethodGet, "https://apihub.googleapis.com/v1/projects/"+project+"/locations/"+region+"/apis/"+api+"/versions/"+version+"/specs/"+spec+":contents", nil)
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		body, err := io.ReadAll(resp.Body)
+		if err == nil {
+			json.Unmarshal(body, &contents)
+			//fmt.Println(string(body))
+		}
+	}
+
+	return contents
 }
 
 func deleteApiHubApi(api string, token string) {

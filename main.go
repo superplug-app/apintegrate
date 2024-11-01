@@ -32,16 +32,16 @@ type GeneralFlags struct {
 
 func main() {
 	// Create new cli
-	cli := clir.NewCli("apintsync", "A syncing tool for API & integration platforms", "v0.1.5")
+	cli := clir.NewCli("apintsync", "A syncing tool for API & integration platforms", "v0.1.6")
 
-	generalCommand := cli.NewSubCommand("general", "Functions for general offramped APIs.")
+	generalCommand := cli.NewSubCommand("general", "Functions for exported & offramped APIs.")
 	generalApisCommand := generalCommand.NewSubCommand("apis", "Functions for General API resources.")
 	generalApisCommand.NewSubCommandFunction("cleanlocal", "Removes all APIs from offramped general definitions in local storage.", generalCleanLocal)
 
-	webServerCommand := cli.NewSubCommand("ws", "Functions for the web server.")
+	webServerCommand := cli.NewSubCommand("ws", "Functions for running a web server for apintsync operations.")
 	webServerCommand.NewSubCommandFunction("start", "Start a web server to listen for commands.", webServerStart)
 
-	apigeeCommand := cli.NewSubCommand("apigee", "Functions for Apigee.")
+	apigeeCommand := cli.NewSubCommand("apigee", "Functions for Apigee API Management.")
 	apigeeApisCommand := apigeeCommand.NewSubCommand("apis", "Functions for Apigee API resources.")
 	apigeeApisCommand.NewSubCommandFunction("export", "Exports Apigee APIs from a given project.", apigeeExport)
 	apigeeApisCommand.NewSubCommandFunction("import", "Imports APIs to an Apigee project.", apigeeImport)
@@ -53,6 +53,7 @@ func main() {
 	apiHubApisCommand := apiHubCommand.NewSubCommand("apis", "Functions for API Hub API resources.")
 	apiHubApisCommand.NewSubCommandFunction("onramp", "Onramps APIs from general to API Hub.", apiHubOnramp)
 	apiHubApisCommand.NewSubCommandFunction("import", "Imports APIs to API Hub.", apiHubImport)
+	apiHubApisCommand.NewSubCommandFunction("export", "Exports APIs from API Hub.", apiHubExport)
 	apiHubApisCommand.NewSubCommandFunction("clean", "Removes all APIs from API Hub.", apiHubClean)
 	apiHubApisCommand.NewSubCommandFunction("cleanlocal", "Removes all API Hub APIs from local storage.", apiHubCleanLocal)
 

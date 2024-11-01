@@ -27,4 +27,5 @@ go.work.sum
 src
 build
 *.local*
+1.env.*.sh
 apintsync
