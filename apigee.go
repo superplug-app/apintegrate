@@ -38,6 +38,10 @@ type ApigeeEnvironmentProxy struct {
 	Name string `json:"name"`
 }
 
+type ApigeeDevelopers struct {
+	Developers []ApigeeDeveloper `json:"developer"`
+}
+
 type ApigeeDeveloper struct {
 	Email     string `json:"email"`
 	UserName  string `json:"userName"`
@@ -53,6 +57,10 @@ type ApigeeDeveloperApp struct {
 	ExpiryType     string   `json:"expiryType"`
 }
 
+type ApigeeProducts struct {
+	Products []ApigeeProduct `json:"apiProduct"`
+}
+
 type ApigeeProduct struct {
 	Name         string   `json:"name"`
 	DisplayName  string   `json:"displayName"`
@@ -63,18 +71,20 @@ type ApigeeProduct struct {
 }
 
 type ApigeeFlags struct {
-	Project     string `name:"project" description:"The Google Cloud project that Apigee is running in."`
-	Region      string `name:"region" description:"The Google Cloud region for a command."`
-	Token       string `name:"token" description:"The Google access token to call Apigee with."`
-	ApiName     string `name:"api" description:"A specific Apigee API."`
-	Environment string `name:"environment" description:"A specific Apigee environment."`
+	Project        string `name:"project" description:"The Google Cloud project that Apigee is running in."`
+	Region         string `name:"region" description:"The Google Cloud region for a command."`
+	Token          string `name:"token" description:"The Google access token to call Apigee with."`
+	ApiName        string `name:"api" description:"A specific Apigee API."`
+	Environment    string `name:"environment" description:"A specific Apigee environment."`
+	ApiProduct     string `name:"product" description:"A specific Apigee product."`
+	DeveloperEmail string `name:"developerEmail" description:"A specific Apigee developer email."`
 }
 
 func apigeeStatus(flags *ApigeeFlags) PlatformStatus {
 	var status PlatformStatus
 	if flags.Project == "" {
 		status.Connected = false
-		status.Message = "No project given, cannot connect to Apigee."
+		status.Message = "No project given, cannot connect to Apigee. Please specify a --project YOUR_PROJECT_ID flag."
 		return status
 	}
 
@@ -123,7 +133,7 @@ func apigeeStatus(flags *ApigeeFlags) PlatformStatus {
 
 func apigeeExport(flags *ApigeeFlags) error {
 	if flags.Project == "" {
-		fmt.Println("No project given, cannot export Apigee APIs.")
+		fmt.Println("No project given, cannot export Apigee APIs. Please specify a --project YOUR_PROJECT_ID flag.")
 		return nil
 	}
 
@@ -216,7 +226,7 @@ func apigeeExport(flags *ApigeeFlags) error {
 
 func apigeeImport(flags *ApigeeFlags) error {
 	if flags.Project == "" {
-		fmt.Println("No project given.")
+		fmt.Println("No project given. Please specify a --project YOUR_PROJECT_ID flag.")
 		return nil
 	}
 
@@ -262,7 +272,7 @@ func apigeeImport(flags *ApigeeFlags) error {
 
 func apigeeClean(flags *ApigeeFlags) error {
 	if flags.Project == "" {
-		fmt.Println("No project given.")
+		fmt.Println("No project given. Please specify a --project YOUR_PROJECT_ID flag.")
 		return nil
 	}
 
@@ -297,9 +307,86 @@ func apigeeClean(flags *ApigeeFlags) error {
 	return nil
 }
 
+func apigeeDevelopersClean(flags *ApigeeFlags) error {
+	if flags.Project == "" {
+		fmt.Println("No project given. Please specify a --project YOUR_PROJECT_ID flag.")
+		return nil
+	}
+
+	fmt.Println("Removing all Apigee Developers for project " + flags.Project + "...")
+
+	if flags.Token == "" {
+		var token *oauth2.Token
+		scopes := []string{
+			"https://www.googleapis.com/auth/cloud-platform",
+		}
+
+		ctx := context.Background()
+		credentials, err := google.FindDefaultCredentials(ctx, scopes...)
+
+		if err == nil {
+			token, err = credentials.TokenSource.Token()
+
+			if err == nil {
+				flags.Token = token.AccessToken
+			}
+		}
+	}
+
+	developers := getApigeeDevelopers(flags.Project, flags.Token)
+	for _, developer := range developers.Developers {
+		if flags.DeveloperEmail == "" || flags.DeveloperEmail == developer.Email {
+			fmt.Println("Deleting " + developer.Email + "...")
+			deleteApigeeDeveloper(flags.Project, flags.Token, developer.Email)
+		}
+	}
+
+	return nil
+}
+
+func apigeeProductsClean(flags *ApigeeFlags) error {
+	if flags.Project == "" {
+		fmt.Println("No project given. Please specify a --project YOUR_PROJECT_ID flag.")
+		return nil
+	}
+
+	fmt.Println("Removing all Apigee Products for project " + flags.Project + "...")
+
+	if flags.Token == "" {
+		var token *oauth2.Token
+		scopes := []string{
+			"https://www.googleapis.com/auth/cloud-platform",
+		}
+
+		ctx := context.Background()
+		credentials, err := google.FindDefaultCredentials(ctx, scopes...)
+
+		if err == nil {
+			token, err = credentials.TokenSource.Token()
+
+			if err == nil {
+				flags.Token = token.AccessToken
+			}
+		}
+	}
+
+	products := getApigeeApiProducts(flags.Project, flags.Token)
+
+	fmt.Println("Found " + strconv.Itoa(len(products.Products)) + " products.")
+
+	for _, product := range products.Products {
+		if flags.ApiProduct == "" || flags.ApiProduct == product.Name {
+			fmt.Println("Deleting " + product.Name + "...")
+			deleteApigeeProduct(flags.Project, flags.Token, product.Name)
+		}
+	}
+
+	return nil
+}
+
 func getApigeeApis(org string, token string) ApigeeProxies {
 	var apis ApigeeProxies
-	req, _ := http.NewRequest(http.MethodGet, "https://apigee.googleapis.com/v1/organizations/"+org+"/apis?includeRevisions=true", nil)
+	req, _ := http.NewRequest(http.MethodGet, "https://apigee.googleapis.com/v1/organizations/"+org+"/apiproducts", nil)
 	req.Header.Add("Authorization", "Bearer "+token)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -312,6 +399,40 @@ func getApigeeApis(org string, token string) ApigeeProxies {
 	}
 
 	return apis
+}
+
+func getApigeeApiProducts(org string, token string) ApigeeProducts {
+	var result ApigeeProducts
+	req, _ := http.NewRequest(http.MethodGet, "https://apigee.googleapis.com/v1/organizations/"+org+"/apiproducts", nil)
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		body, err := io.ReadAll(resp.Body)
+		if err == nil {
+			json.Unmarshal(body, &result)
+			//fmt.Println(string(body))
+		}
+	}
+
+	return result
+}
+
+func getApigeeDevelopers(org string, token string) ApigeeDevelopers {
+	var result ApigeeDevelopers
+	req, _ := http.NewRequest(http.MethodGet, "https://apigee.googleapis.com/v1/organizations/"+org+"/developers", nil)
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		body, err := io.ReadAll(resp.Body)
+		if err == nil {
+			json.Unmarshal(body, &result)
+			//fmt.Println(string(body))
+		}
+	}
+
+	return result
 }
 
 func getApigeeApiBundle(org string, api string, revision string, token string) []byte {
@@ -458,14 +579,34 @@ func createApigeeApi(org string, token string, name string) error {
 	return err
 }
 
+func deleteApigeeDeveloper(org string, token string, email string) {
+	req, _ := http.NewRequest(http.MethodDelete, "https://apigee.googleapis.com/v1/organizations/"+org+"/developers/"+email, nil)
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	_, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("Error deleting Apigee developer: " + err.Error())
+	}
+}
+
+func deleteApigeeProduct(org string, token string, name string) {
+	req, _ := http.NewRequest(http.MethodDelete, "https://apigee.googleapis.com/v1/organizations/"+org+"/apiproducts/"+name, nil)
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	_, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("Error deleting Apigee product: " + err.Error())
+	}
+}
+
 func initApigeeTest(flags *ApigeeFlags) error {
 	if flags.Project == "" {
-		fmt.Println("No project given, cannot init test data.")
+		fmt.Println("No project given, cannot init test data. Please specify a --project YOUR_PROJECT_ID flag.")
 		return nil
 	}
 
 	if flags.Environment == "" {
-		fmt.Println("No environment given, cannot init test data.")
+		fmt.Println("No environment given, cannot init test data. Please specify an environment with the --environment YOUR_ENVIRONMENT flag.")
 		return nil
 	}
 

@@ -32,7 +32,7 @@ type GeneralFlags struct {
 
 func main() {
 	// Create new cli
-	cli := clir.NewCli("apintsync", "A syncing tool for API & integration platforms", "v0.1.6")
+	cli := clir.NewCli("apintsync", "A syncing tool for API & integration platforms", "v0.1.7")
 
 	generalCommand := cli.NewSubCommand("general", "Functions for exported & offramped APIs.")
 	generalApisCommand := generalCommand.NewSubCommand("apis", "Functions for General API resources.")
@@ -47,6 +47,11 @@ func main() {
 	apigeeApisCommand.NewSubCommandFunction("import", "Imports APIs to an Apigee project.", apigeeImport)
 	apigeeApisCommand.NewSubCommandFunction("clean", "Removes all of the Apigee APIs from a given project.", apigeeClean)
 	apigeeTestCommand := apigeeCommand.NewSubCommand("test", "Local test commands.")
+	apigeeTestCommand.NewSubCommandFunction("init", "Initializes local test data for an environment.", initApigeeTest)
+	apigeeProductsCommand := apigeeCommand.NewSubCommand("products", "Functions for Apigee products.")
+	apigeeProductsCommand.NewSubCommandFunction("clean", "Removes all products from a given project.", apigeeProductsClean)
+	apigeeDevelopersCommand := apigeeCommand.NewSubCommand("developers", "Functions for Apigee developers.")
+	apigeeDevelopersCommand.NewSubCommandFunction("clean", "Removes all developers and apps from a given project.", apigeeDevelopersClean)
 	apigeeTestCommand.NewSubCommandFunction("init", "Initializes local test data for an environment.", initApigeeTest)
 
 	apiHubCommand := cli.NewSubCommand("apihub", "Functions for Apigee API Hub.")

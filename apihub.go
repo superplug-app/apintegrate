@@ -104,11 +104,11 @@ func apiHubStatus(flags *ApigeeFlags) PlatformStatus {
 	var status PlatformStatus
 	if flags.Project == "" {
 		status.Connected = false
-		status.Message = "No project given, cannot connect to API Hub."
+		status.Message = "No project given, cannot connect to API Hub. Please specify a --project YOUR_PROJECT_ID flag."
 		return status
 	} else if flags.Region == "" {
 		status.Connected = false
-		status.Message = "No region given, cannot connect to API Hub."
+		status.Message = "No region given, cannot connect to API Hub. Please specify a --region YOUR_REGION flag."
 		return status
 	}
 
@@ -160,10 +160,10 @@ func apiHubOnramp(flags *ApigeeFlags) error {
 	baseDir := "src/main/apihub/apiproxies"
 
 	if flags.Project == "" {
-		fmt.Println("No project given.")
+		fmt.Println("No project given. Please specify a --project YOUR_PROJECT_ID flag.")
 		return nil
 	} else if flags.Region == "" {
-		fmt.Println("No region given.")
+		fmt.Println("No region given. Please specify a --region YOUR_REGION flag.")
 		return nil
 	}
 
@@ -322,10 +322,10 @@ func apiHubOnramp(flags *ApigeeFlags) error {
 
 func apiHubImport(flags *ApigeeFlags) error {
 	if flags.Project == "" {
-		fmt.Println("No project given.")
+		fmt.Println("No project given. Please specify a --project YOUR_PROJECT_ID flag.")
 		return nil
 	} else if flags.Region == "" {
-		fmt.Println("No region given.")
+		fmt.Println("No region given. Please specify a --region YOUR_REGION flag.")
 		return nil
 	}
 
@@ -516,10 +516,10 @@ func apiHubExport(flags *ApigeeFlags) error {
 	baseDir := "src/main/apihub/apiproxies"
 
 	if flags.Project == "" {
-		fmt.Println("No project given.")
+		fmt.Println("No project given. Please specify a --project YOUR_PROJECT_ID flag.")
 		return nil
 	} else if flags.Region == "" {
-		fmt.Println("No region given.")
+		fmt.Println("No region given. Please specify a --region YOUR_REGION flag.")
 		return nil
 	}
 
@@ -606,10 +606,10 @@ func apiHubCleanLocal(flags *ApigeeFlags) error {
 
 func apiHubClean(flags *ApigeeFlags) error {
 	if flags.Project == "" {
-		fmt.Println("No project given.")
+		fmt.Println("No project given. Please specify a --project YOUR_PROJECT_ID flag.")
 		return nil
 	} else if flags.Region == "" {
-		fmt.Println("No region given.")
+		fmt.Println("No region given. Please specify a --region YOUR_REGION flag.")
 		return nil
 	}
 
