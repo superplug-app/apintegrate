@@ -75,7 +75,7 @@ func webServerStart(flags *WebServerFlags) error {
 	cli := humacli.New(func(hooks humacli.Hooks, options *WebServerFlags) {
 		// Create a new router & API
 		router := chi.NewMux()
-		api := humachi.New(router, huma.DefaultConfig("Apintsync API", "0.1.7"))
+		api := humachi.New(router, huma.DefaultConfig("Apintsync API", "0.1.8"))
 
 		// Add the operation handler to the API.
 		huma.Get(api, "/v1/apint/status", apimStatus)

@@ -32,7 +32,7 @@ type GeneralFlags struct {
 
 func main() {
 	// Create new cli
-	cli := clir.NewCli("apintsync", "A syncing tool for API & integration platforms", "v0.1.7")
+	cli := clir.NewCli("apintsync", "A syncing tool for API & integration platforms", "v0.1.8")
 
 	generalCommand := cli.NewSubCommand("general", "Functions for exported & offramped APIs.")
 	generalApisCommand := generalCommand.NewSubCommand("apis", "Functions for General API resources.")
@@ -45,6 +45,7 @@ func main() {
 	apigeeApisCommand := apigeeCommand.NewSubCommand("apis", "Functions for Apigee API resources.")
 	apigeeApisCommand.NewSubCommandFunction("export", "Exports Apigee APIs from a given project.", apigeeExport)
 	apigeeApisCommand.NewSubCommandFunction("import", "Imports APIs to an Apigee project.", apigeeImport)
+	apigeeApisCommand.NewSubCommandFunction("deploy", "Deploys APIs to an Apigee project and environment.", apigeeDeploy)
 	apigeeApisCommand.NewSubCommandFunction("clean", "Removes all of the Apigee APIs from a given project.", apigeeClean)
 	apigeeTestCommand := apigeeCommand.NewSubCommand("test", "Local test commands.")
 	apigeeTestCommand.NewSubCommandFunction("init", "Initializes local test data for an environment.", initApigeeTest)

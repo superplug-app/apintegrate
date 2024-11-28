@@ -78,6 +78,7 @@ type ApigeeFlags struct {
 	Environment    string `name:"environment" description:"A specific Apigee environment."`
 	ApiProduct     string `name:"product" description:"A specific Apigee product."`
 	DeveloperEmail string `name:"developerEmail" description:"A specific Apigee developer email."`
+	ServiceAccount string `name:"serviceAccount" description:"A service account email to use for Apigee deployments."`
 }
 
 func apigeeStatus(flags *ApigeeFlags) PlatformStatus {
@@ -263,6 +264,51 @@ func apigeeImport(flags *ApigeeFlags) error {
 				}
 				os.Remove(e.Name() + ".zip")
 				os.Chdir("../../../../..")
+			}
+		}
+	}
+
+	return nil
+}
+
+func apigeeDeploy(flags *ApigeeFlags) error {
+	if flags.Project == "" {
+		fmt.Println("No project given. Please specify a --project YOUR_PROJECT_ID flag.")
+		return nil
+	} else if flags.Environment == "" {
+		fmt.Println("No Apigee environment given. Please specify an --environment YOUR_ENVIRONMENT flag.")
+		return nil
+	}
+
+	fmt.Println("Deploying Apigee APIs to project " + flags.Project + "...")
+	var baseDir = "src/main/apigee/apiproxies"
+	if flags.Token == "" {
+		var token *oauth2.Token
+		scopes := []string{
+			"https://www.googleapis.com/auth/cloud-platform",
+		}
+
+		ctx := context.Background()
+		credentials, err := google.FindDefaultCredentials(ctx, scopes...)
+
+		if err == nil {
+			token, err = credentials.TokenSource.Token()
+
+			if err == nil {
+				flags.Token = token.AccessToken
+			}
+		}
+	}
+
+	apis, err := os.ReadDir(baseDir)
+	if err == nil {
+		for _, e := range apis {
+			if flags.ApiName == "" || flags.ApiName == e.Name() {
+				latestVersion := getApigeeApiLatestVersion(flags.Project, flags.Token, e.Name())
+
+				fmt.Println("Deploying " + e.Name() + " version " + latestVersion + " to environment " + flags.Environment + "...")
+
+				deployApigeeApi(flags.Project, flags.Token, flags.Environment, e.Name(), latestVersion, flags.ServiceAccount)
 			}
 		}
 	}
@@ -577,6 +623,57 @@ func createApigeeApi(org string, token string, name string) error {
 	}
 
 	return err
+}
+
+func deployApigeeApi(org string, token string, env string, name string, version string, serviceAccount string) error {
+
+	url := "https://apigee.googleapis.com/v1/organizations/" + org + "/environments/" + env + "/apis/" + name + "/revisions/" + version + "/deployments?override=true"
+	if serviceAccount != "" {
+		url = url + "&serviceAccount=" + serviceAccount
+	}
+
+	r, _ := http.NewRequest(http.MethodPost, url, nil)
+	r.Header.Add("Content-Type", "application/json")
+	r.Header.Add("Authorization", "Bearer "+token)
+	client := &http.Client{}
+	resp, err := client.Do(r)
+
+	if resp.StatusCode != 200 {
+		fmt.Println("Error deploying Apigee API: " + resp.Status)
+		body, err := io.ReadAll(resp.Body)
+		if err == nil {
+			fmt.Println(string(body))
+		}
+	}
+
+	return err
+}
+
+func getApigeeApiLatestVersion(org string, token string, name string) string {
+	var result string
+	var apigeeApi ApigeeApi
+	req, _ := http.NewRequest(http.MethodGet, "https://apigee.googleapis.com/v1/organizations/"+org+"/apis/"+name, nil)
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		body, err := io.ReadAll(resp.Body)
+		if err == nil {
+			json.Unmarshal(body, &apigeeApi)
+			//fmt.Println(string(body))
+
+			for _, value := range apigeeApi.Revision {
+				v, _ := strconv.Atoi(value)
+				r, _ := strconv.Atoi(result)
+
+				if v > r {
+					result = value
+				}
+			}
+		}
+	}
+
+	return result
 }
 
 func deleteApigeeDeveloper(org string, token string, email string) {
