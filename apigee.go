@@ -432,7 +432,7 @@ func apigeeProductsClean(flags *ApigeeFlags) error {
 
 func getApigeeApis(org string, token string) ApigeeProxies {
 	var apis ApigeeProxies
-	req, _ := http.NewRequest(http.MethodGet, "https://apigee.googleapis.com/v1/organizations/"+org+"/apiproducts", nil)
+	req, _ := http.NewRequest(http.MethodGet, "https://apigee.googleapis.com/v1/organizations/"+org+"/apis?includeRevisions=true", nil)
 	req.Header.Add("Authorization", "Bearer "+token)
 
 	resp, err := http.DefaultClient.Do(req)

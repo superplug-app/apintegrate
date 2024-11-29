@@ -32,7 +32,7 @@ type GeneralFlags struct {
 
 func main() {
 	// Create new cli
-	cli := clir.NewCli("apintsync", "A syncing tool for API & integration platforms", "v0.1.8")
+	cli := clir.NewCli("apintsync", "A syncing tool for API & integration platforms", "v0.1.9")
 
 	generalCommand := cli.NewSubCommand("general", "Functions for exported & offramped APIs.")
 	generalApisCommand := generalCommand.NewSubCommand("apis", "Functions for General API resources.")
