@@ -32,13 +32,13 @@ type GeneralFlags struct {
 
 func main() {
 	// Create new cli
-	cli := clir.NewCli("apintsync", "A syncing tool for API & integration platforms", "v0.1.9")
+	cli := clir.NewCli("apintegrate", "A syncing tool for API & integration platforms", "v0.2.0")
 
 	generalCommand := cli.NewSubCommand("general", "Functions for exported & offramped APIs.")
 	generalApisCommand := generalCommand.NewSubCommand("apis", "Functions for General API resources.")
 	generalApisCommand.NewSubCommandFunction("cleanlocal", "Removes all APIs from offramped general definitions in local storage.", generalCleanLocal)
 
-	webServerCommand := cli.NewSubCommand("ws", "Functions for running a web server for apintsync operations.")
+	webServerCommand := cli.NewSubCommand("ws", "Functions for running a web server for apintegrate operations.")
 	webServerCommand.NewSubCommandFunction("start", "Start a web server to listen for commands.", webServerStart)
 
 	apigeeCommand := cli.NewSubCommand("apigee", "Functions for Apigee API Management.")

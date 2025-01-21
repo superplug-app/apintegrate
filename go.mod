@@ -1,4 +1,4 @@
-module apintegrate/apintsync
+module apintegrate/apintegrate
 
 go 1.22.6
 

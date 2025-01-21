@@ -8,8 +8,8 @@ RUN go mod download
 
 COPY *.go ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /apintsync
+RUN CGO_ENABLED=0 GOOS=linux go build -o /apintegrate
 
 EXPOSE 8080
 
-CMD ["/apintsync", "ws", "start"]
+CMD ["/apintegrate", "ws", "start"]

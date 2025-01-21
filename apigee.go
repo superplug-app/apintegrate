@@ -74,7 +74,7 @@ type ApigeeFlags struct {
 	Project        string `name:"project" description:"The Google Cloud project that Apigee is running in."`
 	Region         string `name:"region" description:"The Google Cloud region for a command."`
 	Token          string `name:"token" description:"The Google access token to call Apigee with."`
-	ApiName        string `name:"api" description:"A specific Apigee API."`
+	ApiName        string `name:"name" description:"A specific Apigee API."`
 	Environment    string `name:"environment" description:"A specific Apigee environment."`
 	ApiProduct     string `name:"product" description:"A specific Apigee product."`
 	DeveloperEmail string `name:"developerEmail" description:"A specific Apigee developer email."`

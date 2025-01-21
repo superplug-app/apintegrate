@@ -75,13 +75,13 @@ func webServerStart(flags *WebServerFlags) error {
 	cli := humacli.New(func(hooks humacli.Hooks, options *WebServerFlags) {
 		// Create a new router & API
 		router := chi.NewMux()
-		api := humachi.New(router, huma.DefaultConfig("Apintsync API", "0.1.9"))
+		api := humachi.New(router, huma.DefaultConfig("Apintegrate API", "0.2.0"))
 
 		// Add the operation handler to the API.
-		huma.Get(api, "/v1/apint/status", apimStatus)
-		huma.Post(api, "/v1/apint/offramp", apimOfframp)
-		huma.Post(api, "/v1/apint/onramp", apimOnramp)
-		huma.Post(api, "/v1/apint/sync", apintSync)
+		huma.Get(api, "/v1/apintegrate/status", apimStatus)
+		huma.Post(api, "/v1/apintegrate/offramp", apimOfframp)
+		huma.Post(api, "/v1/apintegrate/onramp", apimOnramp)
+		huma.Post(api, "/v1/apintegrate/sync", apintSync)
 
 		hooks.OnStart(func() {
 			http.ListenAndServe(fmt.Sprintf(":%d", options.Port), router)
