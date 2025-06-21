@@ -30,3 +30,4 @@ build
 1.env.*.sh
 apintsync
 apintegrate
+oasync

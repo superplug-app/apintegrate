@@ -515,11 +515,14 @@ func apiHubImport(flags *ApigeeFlags) error {
 func apiHubExport(flags *ApigeeFlags) error {
 	baseDir := "src/main/apihub/apiproxies"
 
-	if flags.Project == "" {
-		fmt.Println("No project given. Please specify a --project YOUR_PROJECT_ID flag.")
+	if flags.Project == "" && flags.Region == "" {
+		fmt.Println("Missing ' --project YOUR_PROJECT_ID --region YOUR_REGION'")
+		return nil
+	} else if flags.Project == "" {
+		fmt.Println("Missing ' --project YOUR_PROJECT_ID'")
 		return nil
 	} else if flags.Region == "" {
-		fmt.Println("No region given. Please specify a --region YOUR_REGION flag.")
+		fmt.Println("Missing ' --region YOUR_REGION'")
 		return nil
 	}
 

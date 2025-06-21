@@ -8,8 +8,8 @@ RUN go mod download
 
 COPY *.go ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /apintegrate
+RUN CGO_ENABLED=0 GOOS=linux go build -o /oasync
 
 EXPOSE 8080
 
-CMD ["/apintegrate", "ws", "start"]
+CMD ["/oasync", "ws", "start"]

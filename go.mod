@@ -1,4 +1,4 @@
-module apintegrate/apintegrate
+module superplug-app/oasync
 
 go 1.22.6
 
